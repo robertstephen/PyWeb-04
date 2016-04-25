@@ -25,7 +25,8 @@ new 'Bottom Text' and observe the network requests being made, and note
 the imageID for the Ancient Aliens meme.
 
 TODO #1:
-The imageID for the Ancient Aliens meme is:
+The imageID for the Ancient Aliens meme is: 627067
+The imageID for Buzz/Woody X, X Everywhere meme is: 8619102
 
 You will also need a way to identify headlines on the CNN page using
 BeautifulSoup. On the 'Unnecessary Knowledge Page', our fact was
@@ -40,7 +41,7 @@ wrapped like so:
 So our facts were identified by the tag having
 * name: div
 * attribute name: id
-* attribute value: content.
+* attribute value: content
 
 We used the following BeautifulSoup call to isolate that element:
 
@@ -53,11 +54,15 @@ Now we have to figure out how to isolate CNN headlines. Go to cnn.com and
 click on a headline and click 'Inspect'. If an element has a rightward
 pointing arrow, then you can click on it to see its contents.
 
+element = parsed.find('span', class='cd_headline-text')
+
+element = parsed.find_all('span', class='cd_headline-text')
+
 TODO #2:
 Each 'Top Stories' headline is wrapped in a tag that has:
-* name:
-* attribute name:
-* attribute value:
+* name: span
+* attribute name: class
+* attribute value: cd__headline-text
 
 NOTE: We used the `find` method to find our fact element from unkno.com.
 The `find` method WILL ALSO work for finding a headline element from cnn.com,
@@ -101,11 +106,19 @@ To submit your homework:
 from bs4 import BeautifulSoup
 import requests
 
-def meme_it(fact):
+def meme_it(imagename,text):
     url = 'http://cdn.meme.am/Instance/Preview'
+
+    if imagename == 'buzz':
+      imageID = 8619102
+    elif imagename == 'aliens':
+      imageID = 627067
+    else:
+      raise NameError('Your entry for the image name is invalid')
+
     params = {
-        'imageID': 2097248,
-        'text1': fact
+        'imageID': imageID,
+        'text1': text,
     }
 
     response = requests.get(url, params)
@@ -113,21 +126,52 @@ def meme_it(fact):
     return response.content
 
 
-def parse_fact(body):
+def parse_txt(sourcename,body):
     parsed = BeautifulSoup(body, 'html5lib')
-    fact = parsed.find('div', id='content')
-    return fact.text.strip()
 
-def get_fact():
-    response = requests.get('http://unkno.com')
-    return parse_fact(response.text)
+    if sourcename == 'fact': 
+      txt = parsed.find('div',id='content')
+    # Q1: It returned an error: SyntaxError: invalid syntax. But this seemed to be exactly what cnn layout is for their headline text... 
+    elif sourcename == 'news':
+      txt = parsed.find('span',class='cd__headline-text')
+    else:
+      raise NameError('Your entry for the source is invalid')
+    
+    return txt.text.strip()
+
+def get_txt(sourcename):
+
+    if sourcename == 'fact':
+      link = 'http://unkno.com'
+    elif sourcename == 'news':
+      link = 'http://cnn.com'
+    else:
+      raise NameError('Your entry for the source is invalid')
+
+    response = requests.get(link)
+    
+    return parse_txt(sourcename,response.text)
 
 def process(path):
     args = path.strip("/").split("/")
 
-    fact = get_fact()
+    source = args.pop(0)
+    
+    pic = args.pop(1)
 
-    meme = meme_it(fact)
+    sourcename = {
+       "fact": fact,
+       "news": news,
+    }.get(source)
+
+    imagename = {
+      "buzz": buzz,
+      "aliens": aliens,
+    }.get(pic)
+
+    text = get_txt(sourcename)
+
+    meme = meme_it(imagename,text)
 
     return meme
 
@@ -149,7 +193,9 @@ def application(environ, start_response):
     finally:
         headers.append(('Content-length', str(len(body))))
         start_response(status, headers)
+        # Q2: It returned an error: AssertionError: write() argument must be a bytes instance. But if I change it to encode('utf8') then the meme won't show up, but just a blank...
         return [body]
+        # [body.encode('utf8')]
 
 if __name__ == '__main__':
     from wsgiref.simple_server import make_server
