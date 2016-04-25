@@ -133,7 +133,7 @@ def parse_txt(sourcename,body):
       txt = parsed.find('div',id='content')
     # Q1: It returned an error: SyntaxError: invalid syntax. But this seemed to be exactly what cnn layout is for their headline text... 
     elif sourcename == 'news':
-      txt = parsed.find('span',class='cd__headline-text')
+      txt = parsed.find('span',class_='cd__headline-text')
     else:
       raise NameError('Your entry for the source is invalid')
     
@@ -155,19 +155,9 @@ def get_txt(sourcename):
 def process(path):
     args = path.strip("/").split("/")
 
-    source = args.pop(0)
-    
-    pic = args.pop(1)
+    sourcename = args[0]
 
-    sourcename = {
-       "fact": fact,
-       "news": news,
-    }.get(source)
-
-    imagename = {
-      "buzz": buzz,
-      "aliens": aliens,
-    }.get(pic)
+    imagename = args[1]
 
     text = get_txt(sourcename)
 
